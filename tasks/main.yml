@@ -6,48 +6,57 @@
       - lxd
       - lxd-client
     state: "{{ 'absent' if use_snap else 'present' }}"
+  tags: install
 
 - name: establish group
   group:
     name: lxd
     system: yes
     state: present
+  tags: install
 
 - name: establish user in group
   user:
     name: "{{ ansible_user }}"
     groups: lxd
     append: yes
+  tags: install
 
 - name: establish snap package
+  when: use_snap | bool
   snap:
     name: lxd
     state: present
-  when: use_snap
+  tags: install
 
 - name: setup service
   systemd:
     name: snap.lxd.daemon.service 
     state: started
     enabled: yes
-    scope: system       
+    scope: system
+  tags: install
 
 - name: add minimal ubuntu repo
   command: lxc remote add --protocol simplestreams ubuntu-minimal https://cloud-images.ubuntu.com/minimal/releases/
   register: __insert_minimal_ubuntu
   failed_when: false
   changed_when: __insert_minimal_ubuntu.rc == 0 
+  tags: configure
 
 - name: read current configuration
+  when: configuration is defined 
   command: lxd init --dump
   changed_when: false
   register: __used_lxd_configuration
-  when: configuration is defined 
+  tags: configure
 
 - name: introduce preseed configuration
-  shell: echo {{ configuration }} | lxd init --preseed 
-  register: __configuration_seeding
-  failed_when: __configuration_seeding.rc != 0 
   when:
     - configuration is defined
     - "configuration != __used_lxd_configuration.stdout | from_yaml"
+  shell: echo {{ configuration }} | lxd init --preseed 
+  register: __configuration_seeding
+  failed_when: __configuration_seeding.rc != 0 
+  tags: configure
+  
