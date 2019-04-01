@@ -55,7 +55,7 @@
   when:
     - configuration is defined
     - "configuration != __used_lxd_configuration.stdout | from_yaml"
-  shell: echo {{ configuration }} | lxd init --preseed 
+  shell: echo "{{ configuration }}" | lxd init --preseed 
   register: __configuration_seeding
   failed_when: __configuration_seeding.rc != 0 
   tags: configure
