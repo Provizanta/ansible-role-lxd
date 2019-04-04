@@ -45,8 +45,11 @@
   tags: configure
 
 - name: read current configuration
-  when: configuration is defined 
-  command: lxd init --dump
+  when: configuration is defined
+  become: yes
+  shell: "{{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --dump"
+  args:
+    executable: /bin/bash
   changed_when: false
   register: __used_lxd_configuration
   tags: configure
@@ -55,7 +58,10 @@
   when:
     - configuration is defined
     - "configuration != __used_lxd_configuration.stdout | from_yaml"
-  shell: echo "{{ configuration }}" | lxd init --preseed 
+  become: yes
+  shell: echo "{{ configuration }}" | {{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --preseed 
+  args:
+    executable: /bin/bash
   register: __configuration_seeding
   failed_when: __configuration_seeding.rc != 0 
   tags: configure
