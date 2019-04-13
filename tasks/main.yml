@@ -11,7 +11,7 @@
 - name: establish group
   group:
     name: lxd
-    system: yes
+    system: true
     state: present
   tags: install
 
@@ -19,7 +19,7 @@
   user:
     name: "{{ ansible_user }}"
     groups: lxd
-    append: yes
+    append: true
   tags: install
 
 - name: establish snap package
@@ -31,22 +31,24 @@
 
 - name: setup service
   systemd:
-    name: snap.lxd.daemon.service 
+    name: snap.lxd.daemon.service
     state: started
-    enabled: yes
+    enabled: true
     scope: system
   tags: install
 
 - name: add minimal ubuntu repo
-  command: lxc remote add --protocol simplestreams ubuntu-minimal https://cloud-images.ubuntu.com/minimal/releases/
+  command: >-
+    lxc remote add --protocol simplestreams
+    ubuntu-minimal https://cloud-images.ubuntu.com/minimal/releases/
   register: __insert_minimal_ubuntu
   failed_when: false
-  changed_when: __insert_minimal_ubuntu.rc == 0 
+  changed_when: __insert_minimal_ubuntu.rc == 0
   tags: configure
 
 - name: read current configuration
   when: configuration is defined
-  become: yes
+  become: true
   shell: "{{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --dump"
   args:
     executable: /bin/bash
@@ -58,11 +60,16 @@
   when:
     - configuration is defined
     - "configuration != __used_lxd_configuration.stdout | from_yaml"
-  become: yes
-  shell: echo "{{ configuration }}" | {{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --preseed 
+  become: true
+  shell: >-
+    echo "{{ configuration }}" |
+    {{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --preseed
   args:
     executable: /bin/bash
   register: __configuration_seeding
-  failed_when: __configuration_seeding.rc != 0 
+  failed_when: __configuration_seeding.rc != 0
   tags: configure
-  
+
+- name: establish profiles
+  lxd_profile: "{{ item }}"
+  loop: "{{ profiles }}"
