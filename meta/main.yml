@@ -1,0 +1,25 @@
+---
+
+galaxy_info:
+  role_name: lxd
+  author: Tibor Csoka
+  description: |
+    "Install and setup LXD/LXC using a native packager or snap."
+  company: ""
+
+  license: MIT
+
+  min_ansible_version: 2.8
+
+  platforms:
+    - name: Ubuntu
+      versions:
+        - bionic
+        - cosmic
+
+  galaxy_tags:
+    - lxc
+    - lxd
+    - container
+
+dependencies: []

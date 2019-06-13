@@ -5,7 +5,7 @@
     name:
       - lxd
       - lxd-client
-    state: "{{ 'absent' if use_snap else 'present' }}"
+    state: "{{ use_snap | ternary('absent','present') }}"
   tags: install
 
 - name: establish group
@@ -16,6 +16,7 @@
   tags: install
 
 - name: establish user in group
+  when: ansible_user is defined
   user:
     name: "{{ ansible_user }}"
     groups: lxd
@@ -30,8 +31,9 @@
   tags: install
 
 - name: setup service
+  when: ansible_service_mgr == 'systemd'
   systemd:
-    name: snap.lxd.daemon.service
+    name: "{{ use_snap | ternary('snap.lxd.daemon.service','lxd') }}"
     state: started
     enabled: true
     scope: system
@@ -49,9 +51,7 @@
 - name: read current configuration
   when: configuration is defined
   become: true
-  shell: "{{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --dump"
-  args:
-    executable: /bin/bash
+  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }} init --dump"
   changed_when: false
   register: __used_lxd_configuration
   tags: configure
@@ -61,11 +61,8 @@
     - configuration is defined
     - "configuration != __used_lxd_configuration.stdout | from_yaml"
   become: true
-  shell: >-
-    echo "{{ configuration }}" |
-    {{ '/snap/bin/lxd' if use_snap else 'lxd' }} init --preseed
-  args:
-    executable: /bin/bash
+  command: >-
+    {{ use_snap | ternary('/snap/bin/lxd','lxd')  }} init --preseed -- {{ configuration }}
   register: __configuration_seeding
   failed_when: __configuration_seeding.rc != 0
   tags: configure

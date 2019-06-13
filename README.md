@@ -1,7 +1,9 @@
-LXD
+Ansible role: LXD
 =========
 
-Establish and setup LXD.
+[![Build Status](https://travis-ci.com/Provizanta/ansible-role-lxd.svg?branch=master)](https://travis-ci.com/Provizanta/ansible-role-lxd)
+
+Establish and configure LXD/LXC for Linux using either a native or a snap package.
 
 Requirements
 ------------
@@ -11,9 +13,11 @@ None
 Role Variables
 --------------
 
-    configuration: <the entire yaml preseed configuration>
-    profiles: <list, profile list>
-    use_snap: <yes if snap package should be used instead of package>
+Optional arguments:
+
+    configuration: <dict, preseed configuration in YAML format>
+    profiles: <list, individual profiles in YAML format>
+    use_snap: <bool, use snap package instead of native package>
 
 Dependencies
 ------------
@@ -27,7 +31,7 @@ Example Playbook
       roles:
         - role: lxd
           vars:
-            use_snap: no 
+            use_snap: no
             configuration: {}
 
 License
@@ -38,4 +42,4 @@ MIT
 Author Information
 ------------------
 
-Tibor Csoka
+Tibor Csóka

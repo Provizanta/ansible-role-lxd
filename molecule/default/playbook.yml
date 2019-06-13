@@ -1,0 +1,21 @@
+---
+
+- name: Converge
+  hosts: all
+  roles:
+    - role: lxd
+      vars:
+        use_snap: false
+
+  post_tasks:
+    - name: lxd should be installed
+      block:
+        - name: check lxd version
+          command: 'lxd --version'
+          changed_when: false
+          register: r
+        - name: evaluate file presence
+          assert:
+            that:
+              - r.rc == 0
+            fail_msg: lxd should be installed
