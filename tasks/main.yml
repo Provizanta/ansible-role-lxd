@@ -56,16 +56,21 @@
   register: __used_lxd_configuration
   tags: configure
 
-- name: introduce preseed configuration
+- name: evaluate current configuration
+  when: configuration is defined
+  set_fact:
+    __desired_configuration: "{{ configuration | combine({'profiles': []}) }}"
+    __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
+
+- name: establish desired configuration
   when:
     - configuration is defined
-    - "configuration != __used_lxd_configuration.stdout | from_yaml"
+    - __desired_configuration != __current_configuration
   become: true
-  command: >-
-    {{ use_snap | ternary('/snap/bin/lxd','lxd')  }} init --preseed -- {{ configuration }}
+  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd')  }} init --preseed -- {{ configuration }}"
   register: __configuration_seeding
   failed_when: __configuration_seeding.rc != 0
-  tags: configure
+  tags: __configuration_seeding
 
 - name: establish profiles
   lxd_profile: "{{ item }}"
