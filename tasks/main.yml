@@ -1,6 +1,7 @@
 ---
 
 - name: establish packages
+  become: true
   package:
     name:
       - lxd
@@ -9,6 +10,7 @@
   tags: install
 
 - name: establish group
+  become: true
   group:
     name: lxd
     system: true
@@ -17,6 +19,7 @@
 
 - name: establish user in group
   when: ansible_user is defined
+  become: true
   user:
     name: "{{ ansible_user }}"
     groups: lxd
@@ -47,6 +50,7 @@
 
 - name: establish snap package
   when: use_snap | bool
+  become: true
   snap:
     name: lxd
     state: present
@@ -54,6 +58,7 @@
 
 - name: setup service
   when: ansible_service_mgr == 'systemd'
+  become: true
   systemd:
     name: "{{ use_snap | ternary('snap.lxd.daemon.service','lxd') }}"
     state: started
@@ -62,6 +67,7 @@
   tags: install
 
 - name: add minimal ubuntu repo
+  become: true
   command: >-
     lxc remote add --protocol simplestreams
     ubuntu-minimal https://cloud-images.ubuntu.com/minimal/releases/
@@ -79,12 +85,12 @@
 
 - name: configure daemon
   when: configuration is defined
+  become: true
   vars:
     __lxd_command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }}"
   block:
     - name: read current configuration
       when: configuration is defined
-      become: true
       command: "{{ __lxd_command }} init --dump"
       changed_when: false
       register: __used_lxd_configuration
@@ -98,13 +104,13 @@
 
     - name: establish desired configuration
       when: __desired_configuration != __current_configuration
-      become: true
       command: "{{ __lxd_command }} init --preseed -- {{ configuration }}"
       register: __configuration_seeding
       failed_when: __configuration_seeding.rc != 0
       tags: configure
 
 - name: establish profiles
+  become: true
   lxd_profile: "{{ item }}"
   loop: "{{ profiles }}"
   tags: configure
