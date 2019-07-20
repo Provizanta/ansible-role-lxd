@@ -70,30 +70,41 @@
   failed_when: false
   tags: configure
 
-- name: read current configuration
-  when: configuration is defined
+- name: auto-configure daemon
+  when: configuration is not defined
   become: true
-  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }} init --dump"
+  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }} init --auto"
   changed_when: false
-  register: __used_lxd_configuration
   tags: configure
 
-- name: evaluate current configuration
+- name: configure daemon
   when: configuration is defined
-  set_fact:
-    __desired_configuration: "{{ configuration | combine({'profiles': []}) }}"
-    __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
+  vars:
+    __lxd_command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }}"
+  block:
+    - name: read current configuration
+      when: configuration is defined
+      become: true
+      command: "{{ __lxd_command }} init --dump"
+      changed_when: false
+      register: __used_lxd_configuration
+      tags: configure
 
-- name: establish desired configuration
-  when:
-    - configuration is defined
-    - __desired_configuration != __current_configuration
-  become: true
-  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd')  }} init --preseed -- {{ configuration }}"
-  register: __configuration_seeding
-  failed_when: __configuration_seeding.rc != 0
-  tags: __configuration_seeding
+    - name: evaluate current configuration
+      set_fact:
+        __desired_configuration: "{{ configuration | combine({'profiles': []}) }}"
+        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
+      tags: configure
+
+    - name: establish desired configuration
+      when: __desired_configuration != __current_configuration
+      become: true
+      command: "{{ __lxd_command }} init --preseed -- {{ configuration }}"
+      register: __configuration_seeding
+      failed_when: __configuration_seeding.rc != 0
+      tags: configure
 
 - name: establish profiles
   lxd_profile: "{{ item }}"
   loop: "{{ profiles }}"
+  tags: configure
