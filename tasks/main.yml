@@ -104,7 +104,10 @@
 
     - name: establish desired configuration
       when: __desired_configuration != __current_configuration
-      command: "{{ __lxd_command }} init --preseed -- {{ configuration }}"
+      shell: |
+        cat <<EOF | {{ __lxd_command }} init --preseed
+        {{ configuration }}
+        EOF
       register: __configuration_seeding
       failed_when: __configuration_seeding.rc != 0
       tags: configure
