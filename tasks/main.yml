@@ -1,12 +1,16 @@
 ---
 
+- name: prepare facts
+  set_fact:
+    __lxd_command: "{{ lxd_use_snap_daemon | ternary('/snap/bin/lxd','lxd') }}"
+
 - name: establish packages
   become: true
   package:
     name:
       - lxd
       - lxd-client
-    state: "{{ lxd_use_snap_daemon | ternary('absent', 'present') }}"
+    state: "{{ lxd_use_snap_daemon | ternary('absent','present') }}"
   tags: install
 
 - name: establish group
@@ -66,53 +70,48 @@
     scope: system
   tags: install
 
-- name: add minimal ubuntu repo
-  become: true
-  command: >-
-    lxc remote add --protocol simplestreams
-    ubuntu-minimal https://cloud-images.ubuntu.com/minimal/releases/
-  register: __insert_minimal_ubuntu
-  changed_when: __insert_minimal_ubuntu.rc == 0
-  failed_when: false
-  tags: configure
-
 - name: auto-configure daemon
   when: lxd_configuration is not defined
   become: true
-  command: "{{ lxd_use_snap_daemon | ternary('/snap/bin/lxd','lxd') }} init --auto"
+  command: "{{ __lxd_command }} init --auto"
   changed_when: false
   tags: configure
 
 - name: configure daemon
   when: lxd_configuration is defined
   become: true
-  vars:
-    __lxd_command: "{{ lxd_use_snap_daemon | ternary('/snap/bin/lxd','lxd') }}"
   block:
     - name: read current configuration
       command: "{{ __lxd_command }} init --dump"
       changed_when: false
       register: __used_lxd_configuration
-      tags: configure
 
-    - name: evaluate current configuration
+    - name: compare with the desired configuration
       set_fact:
-        __desired_configuration: "{{ configuration | combine({'lxd_profiles': []}) }}"
-        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'lxd_profiles': []}) }}"
-      tags: configure
+        __desired_configuration: "{{ lxd_configuration | combine({'profiles': []}) }}"
+        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
 
     - name: establish desired configuration
       when: __desired_configuration != __current_configuration
       shell: |
         cat <<EOF | {{ __lxd_command }} init --preseed
-        {{ configuration }}
+        {{ lxd_configuration }}
         EOF
       register: __configuration_seeding
       failed_when: __configuration_seeding.rc != 0
-      tags: configure
+  tags: configure
 
 - name: establish profiles
   become: true
   lxd_profile: "{{ item }}"
   loop: "{{ lxd_profiles }}"
+  tags: configure
+
+- name: establish remotes
+  become: true
+  command: 'lxc remote add --protocol {{ item.protocol }} {{ item.name }} {{ item.url }}'
+  register: __insert_remote
+  changed_when: __insert_remote.rc == 0
+  failed_when: false
+  loop: "{{ lxd_remotes }}"
   tags: configure

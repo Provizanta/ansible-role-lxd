@@ -2,4 +2,6 @@
 
 lxd_use_snap_daemon: true
 
-lxd_profiles: []      # list of profiles to be loaded directly as YAML
+lxd_profiles: []    # list of profiles to be loaded directly as YAML
+
+lxd_remotes: []     # list of remotes to be added
