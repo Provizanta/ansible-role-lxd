@@ -1,5 +1,5 @@
 ---
 
-use_snap: true
+lxd_use_snap_daemon: true
 
-profiles: []
+lxd_profiles: []      # list of profiles to be loaded directly as YAML

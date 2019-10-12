@@ -6,7 +6,7 @@
     name:
       - lxd
       - lxd-client
-    state: "{{ use_snap | ternary('absent','present') }}"
+    state: "{{ lxd_use_snap_daemon | ternary('absent', 'present') }}"
   tags: install
 
 - name: establish group
@@ -49,7 +49,7 @@
     - root
 
 - name: establish snap package
-  when: use_snap | bool
+  when: lxd_use_snap_daemon | bool
   become: true
   snap:
     name: lxd
@@ -60,7 +60,7 @@
   when: ansible_service_mgr == 'systemd'
   become: true
   systemd:
-    name: "{{ use_snap | ternary('snap.lxd.daemon.service','lxd') }}"
+    name: "{{ lxd_use_snap_daemon | ternary('snap.lxd.daemon.service','lxd') }}"
     state: started
     enabled: true
     scope: system
@@ -77,20 +77,19 @@
   tags: configure
 
 - name: auto-configure daemon
-  when: configuration is not defined
+  when: lxd_configuration is not defined
   become: true
-  command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }} init --auto"
+  command: "{{ lxd_use_snap_daemon | ternary('/snap/bin/lxd','lxd') }} init --auto"
   changed_when: false
   tags: configure
 
 - name: configure daemon
-  when: configuration is defined
+  when: lxd_configuration is defined
   become: true
   vars:
-    __lxd_command: "{{ use_snap | ternary('/snap/bin/lxd','lxd') }}"
+    __lxd_command: "{{ lxd_use_snap_daemon | ternary('/snap/bin/lxd','lxd') }}"
   block:
     - name: read current configuration
-      when: configuration is defined
       command: "{{ __lxd_command }} init --dump"
       changed_when: false
       register: __used_lxd_configuration
@@ -98,8 +97,8 @@
 
     - name: evaluate current configuration
       set_fact:
-        __desired_configuration: "{{ configuration | combine({'profiles': []}) }}"
-        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
+        __desired_configuration: "{{ configuration | combine({'lxd_profiles': []}) }}"
+        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'lxd_profiles': []}) }}"
       tags: configure
 
     - name: establish desired configuration
@@ -115,5 +114,5 @@
 - name: establish profiles
   become: true
   lxd_profile: "{{ item }}"
-  loop: "{{ profiles }}"
+  loop: "{{ lxd_profiles }}"
   tags: configure

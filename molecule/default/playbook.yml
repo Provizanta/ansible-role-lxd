@@ -5,7 +5,7 @@
   roles:
     - role: lxd
       vars:
-        use_snap: false
+        lxd_use_snap_daemon: false
 
   post_tasks:
     - name: lxd should be installed
