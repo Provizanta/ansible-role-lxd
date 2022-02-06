@@ -2,6 +2,7 @@
 
 galaxy_info:
   role_name: lxd
+  namespace: provizanta
   author: Tibor Csoka
   description: |
     "Install and setup LXD/LXC using a native packager or snap."
