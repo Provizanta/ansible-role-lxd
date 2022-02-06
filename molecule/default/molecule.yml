@@ -36,6 +36,5 @@ scenario:
     - destroy
     - create
     - converge
-    # - idempotence   # turned off because it started failing with configuration inclusion
     - lint
     - verify
