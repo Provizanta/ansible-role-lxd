@@ -25,7 +25,7 @@
   when: ansible_user is defined
   become: true
   user:
-    name: "{{ ansible_user }}"
+    name: "{{ ansible_env.USER }}"
     groups: lxd
     append: true
   tags: install
@@ -51,6 +51,15 @@
   loop:
     - lxd
     - root
+
+- name: establish snap presence
+  when: lxd_use_snap_daemon | bool
+  become: true
+  package:
+    name:
+      - snapd
+    state: present
+  tags: install
 
 - name: establish snap package
   when: lxd_use_snap_daemon | bool
@@ -83,16 +92,15 @@
   block:
     - name: read current configuration
       command: "{{ __lxd_command }} init --dump"
-      changed_when: false
       register: __used_lxd_configuration
-
-    - name: compare with the desired configuration
-      set_fact:
-        __desired_configuration: "{{ lxd_configuration | combine({'profiles': []}) }}"
-        __current_configuration: "{{ __used_lxd_configuration.stdout | from_yaml | combine({'profiles': []}) }}"
+      changed_when: false
+      failed_when: false
 
     - name: establish desired configuration
-      when: __desired_configuration != __current_configuration
+      when:
+        - >-
+          __used_lxd_configuration.rc != 0 or
+          (__used_lxd_configuration.stdout | from_yaml | combine({'profiles': []})) != (lxd_configuration | combine({'profiles': []}))
       shell: |
         cat <<EOF | {{ __lxd_command }} init --preseed
         {{ lxd_configuration }}

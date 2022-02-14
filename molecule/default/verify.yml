@@ -1,0 +1,8 @@
+---
+
+- hosts: all
+  tasks:
+    - name: check lxd version
+      command: 'lxd --version'
+      register: r
+      changed_when: false

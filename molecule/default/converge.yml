@@ -3,31 +3,12 @@
 - name: Converge
   hosts: all
   roles:
-    - role: lxd
+    - role: ansible-role-lxd
       vars:
-        lxd_use_snap_daemon: true
+        lxd_use_snap_daemon: false
         lxd_configuration:
           config:
             images.auto_update_interval: "0"
-          networks:
-            - config:
-                ipv4.address: 10.70.121.1/24
-                ipv4.nat: "true"
-                ipv6.address: fd42:4836:a386:aae4::1/64
-                ipv6.nat: "true"
-              description: "One bridge in darkness to bind them..."
-              managed: true
-              name: lxdbr0
-              type: bridge
-          storage_pools:
-            - config:
-                size: 1GB
-                source: /var/snap/lxd/common/lxd/disks/default.img
-                volatile.initial_source: /var/snap/lxd/common/lxd/disks/default.img
-                zfs.pool_name: default
-              description: ""
-              name: default
-              driver: zfs
         lxd_profiles:
           - name: overprivileged
             description: "Way too many limitations removed for a production setup"
@@ -43,16 +24,3 @@
           - name: ubuntu-minimal
             url: https://cloud-images.ubuntu.com/minimal/releases/
             protocol: simplestreams
-
-  post_tasks:
-    - name: lxd should be installed
-      block:
-        - name: check lxd version
-          command: '/snap/bin/lxd --version'
-          changed_when: false
-          register: r
-        - name: evaluate file presence
-          assert:
-            that:
-              - r.rc == 0
-            fail_msg: lxd should be installed
